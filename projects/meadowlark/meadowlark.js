@@ -7,10 +7,11 @@ var app = express();
 app.use(express.static(__dirname+'/public'));
 
 app.use(require('body-parser')());
-app.use(require('cookie-parser')(credentials.cookieSecret));
 
-var credentials = require('./credentials.js');
 
+// var credentials = require('credentials.js');
+
+// app.use(require('cookie-parser')(credentials.cookieSecret));
 
 // Set up handlebars view engine
 var handlebars = require('express-handlebars')
@@ -24,6 +25,7 @@ var handlebars = require('express-handlebars')
                           }
                         }
                      });
+
 
 app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
@@ -44,14 +46,98 @@ app.use('/upload', function(req, res, next){ var now = Date.now();
 });
 
 
+app.use(function(req, res, next) {
+    // if there's a flash message, transfer
+    // it to the context, then clear it
+    // res.locals.flash = req.session.flash;
+    // delete req.session.flash;
+
+    next();
+});
+
 app.use(function(req, res, next){
         res.locals.showTests = app.get('env') !== 'production' &&
                   req.query.test === '1';
 
-        console.log("showTests 값: ", res.locals.showTests);
+        // console.log("showTests 값: ", res.locals.showTests);
 
         next();
 });
+
+// app.use(function (req, res, next) {
+//     console.log('processing request for "'+req.url+ '"....');
+//     next();
+// });
+//
+//
+// app.use(function (req, res, next) {
+//     console.log('terminating request');
+//     res.send('thanks for playing!');
+//     next();
+//     // note that we do NOT call next() here... this terminates the reqeust
+// });
+//
+// app.use(function (req, res, next) {
+//     console.log('whoops, i\'ll never get called');
+// });
+
+app.use(function(req, res, next) {
+    console.log('\n\nALLWAYS');
+    next();
+});
+
+app.get('/a', function (req, res) {
+    console.log('/a: route terminated');
+    res.send('a');
+});
+
+app.get('/a', function (req, res) {
+    console.log('/a: never called');
+});
+
+app.get('/b', function (req, res, next) {
+    console.log('b: route not terminated');
+    next();
+});
+
+app.get(function (req, res, next) {
+    console.log('SOMETIMES');
+    next();
+});
+
+app.get('/b', function (req, res, next) {
+    console.log('/b (part 2): error thrown');
+    throw new Error('b failed');
+});
+
+app.use('/b', function (err, req, res, next) {
+    console.log('/b error detected and passed on');
+    next(err);
+});
+
+app.get('/c', function (err, req) {
+    console.log('/c: error thrown');
+    throw new Error('c failed')
+});
+
+app.use('/c', function (err, req, res, next) {
+    console.log('/c: error decteced but not passed on');
+    next();
+});
+
+app.use(function (err, req, res, next) {
+    console.log('unhandled error dected: ' + err.message);
+    res.send('500 - server error');
+});
+
+app.use(function(req, res) {
+    console.log('route not handled');
+    res.send('404 - not found');
+});
+
+// app.listen(3000, function() {
+//     console.log('listening on 3000');
+// });
 
 app.get('/', function(req, res) {
   res.render('home');
@@ -75,6 +161,39 @@ app.get('/newsletter', function(req, res){
     // provide a dummy value
     res.render('newsletter', { csrf: 'CSRF token goes here' });
 });
+
+app.post('/newletter', function (req, res) {
+    var name = req.body.name || '', email = req.body.email || '';
+    if(!email.match(VALID_EMAIL_REGEX)) {
+    if(req.xhr) return res.json({ error: 'Invalid name email address.' });
+    req.session.flash = {
+        type: 'danger',
+        intro: 'Validation error!',
+        message: 'The email address you entered was  not valid.',
+    };
+    return res.redirect(303, '/newsletter/archive');
+    }
+    new NewsletterSignup({ name: name, email: email }).save(function(err){
+    if(err) {
+        if(req.xhr) return res.json({ error: 'Database error.' });
+        req.session.flash = {
+            type: 'danger',
+            intro: 'Database error!',
+            message: 'There was a database error; please try again later.',
+        }
+        return res.redirect(303, '/newsletter/archive');
+    }
+    if(req.xhr) return res.json({ success: true });
+    req.session.flash = {
+        type: 'success',
+        intro: 'Thank you!',
+        message: 'You have now been signed up for the newsletter.',
+    };
+    return res.redirect(303, '/newsletter/archive');
+    });
+});
+
+
 
 app.get('/thank-you', function(req, res) {
     res.render('thank-you');
@@ -165,6 +284,10 @@ var tours = [
 
 
 
+app.listen(app.get('port'), function() {
+  console.log( 'Express started on htpp"//localhost:', app.get('port') + '; press Ctrl-C to terminate.' );
+});
+
 
 
 // custom 404 page
@@ -185,8 +308,9 @@ app.use(function (err, req, res, next) {
     // res.end('500 - Server Error');
 });
 
-app.listen(app.get('port'), function() {
-  console.log( 'Express started on htpp"//localhost:', app.get('port') + '; press Ctrl-C to terminate.' );
-});
+// Ch10 MiddleWare
+
+
+
 
 if( app.thing === null ) console.log( 'bleat!' );
