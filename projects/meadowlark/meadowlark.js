@@ -45,9 +45,32 @@ app.get('/tours/hood-river', function(req, res){
 	res.render('tours/hood-river');
 });
 
+app.get('/tours/oregon-coast', function(req, res){
+	res.render('tours/oregon-coast');
+});
+
 app.get('/tours/request-group-rate', function(req, res){
 	res.render('tours/request-group-rate');
 });
+
+app.get('/headers', function(req, res) {
+    res.set('Content-Type', 'text/plain');
+    var s = '';
+    for (var name in req.headers) s += name + ': ' + req.headers[name] + '\n';
+      res.send(s);
+});
+
+app.get('/error', function(req, res){ res.status(500);
+        res.render('error');
+});
+
+app.get('/greeting', function(req, res){ res.render('about', {
+                message: 'welcome',
+                style: req.query.style,
+                userid: req.cookie.userid,
+                username: req.session.username,
+}); });
+
 
 // custom 404 page
 app.use(function (req, res) {
