@@ -6,5 +6,5 @@ module.exports = function (req, res, next) {
                 if(!cart.warnings) cart.warnings = [];
                 cart.warnings.push('One or more of your selected tours' + 'requires a waiver');
             }
-            next():
-}
+            next();
+};
