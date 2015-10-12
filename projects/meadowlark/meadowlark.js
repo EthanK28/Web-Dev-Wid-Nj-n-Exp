@@ -1,6 +1,6 @@
-var express = require('express');
-
-var fortune = require('./lib/fortune.js');
+var http = require('http'),
+    express = require('express'),
+    fortune = require('./lib/fortune.js');
 
 var app = express();
 
@@ -15,7 +15,9 @@ app.use(require('express-session')());
 var session = require('express-session');
 var MongoStore = require('connect-mongo')(session);
 
-var rest = require('connect-rest');
+var bodyParser = require('body-parser');
+
+
 
 
 
@@ -23,7 +25,7 @@ var rest = require('connect-rest');
 
 var opts = {
     server: {
-       socketOptions: { keepAlive: 1 }
+       socketOptions: { keepAlive:771 }
     }
 };
 
@@ -50,7 +52,8 @@ app.use(session({
 
 app.use(express.static(__dirname+'/public'));
 
-app.use(require('body-parser')());
+app.use(require('body-parser')())
+    .use(bodyParser.json());
 
 
 // var credentials = require('credentials.js');
@@ -96,59 +99,105 @@ app.use(function(req, res, next){
         next();
 });
 
-app.use('/api', require('cors')());
+
+// REST only with internal Express apis
+// app.use('/api', require('cors')());
 
 var Attraction = require('./models/attraction.js');
 
-app.get('/api/attractions', function(req, res) {
-    Attraction.find({ approved: true }, function(err, attractions) {
-        if(err) return res.send(500, 'Error occurred: database error.');
-        res.json(attractions.map(function(a) {
+// app.get('/api/attractions', function(req, res) {
+//     Attraction.find({ approved: true }, function(err, attractions) {
+//         if(err) return res.send(500, 'Error occurred: database error.');
+//         res.json(attractions.map(function(a) {
+//             return {
+//                 name: a.name,
+//                 id: a._id,
+//                 description: a.description,
+//                 location: a.location
+//             };
+//         }));
+//     });
+// });
+//
+// app.post('/api/attraction', function(req, res) {
+//     var a = new Attraction({
+//         name: req.body.name,
+//         description: req.body.description,
+//         location: { lat: req.body.lat, lng: req.body.lng },
+//         //      location: { lat: req.body.lat, lng: req.body.lng },
+//         history: {
+//               event: 'created',
+//               email: req.body.email,
+//               date: new Date(),
+//           },
+//           approved: false,
+//     });
+//     a.save(function(err, a) {
+//         if(err) return res.send(500, 'Error occurred: database error.');
+//         res.json({ id: a._id });
+//     });
+// });
+//
+// app.get('/api/attraction/:id', function(req, res) {
+//     Attraction.findById(req.params.id, function(err, a) {
+//         if(err) return res.send(500, 'Error occured: database error.');
+//         res.json({
+//             name: a.name,
+//             id: a._id,
+//             description: a.description,
+//             location: a.location
+//         });
+//     });
+// });
+
+// route 파일
+require('./routes.js')(app);
+
+var rest = require('connect-rest');
+
+// define API routes with rest.VERB...
+rest.get('/attractions', function(req, content, cb){
+    Attraction.find({ approved: true }, function(err, attractions){
+        if(err) return cb({ error: 'Internal error.' });
+        cb(null, attractions.map(function(a){
             return {
                 name: a.name,
-                id: a._id,
                 description: a.description,
-                location: a.location
+                location: a.location,
             };
         }));
     });
 });
 
-app.post('/api/attraction', function(req, res) {
+rest.post('/attraction', function(req, content, cb){
     var a = new Attraction({
         name: req.body.name,
         description: req.body.description,
         location: { lat: req.body.lat, lng: req.body.lng },
-        //      location: { lat: req.body.lat, lng: req.body.lng },
         history: {
-              event: 'created',
-              email: req.body.email,
-              date: new Date(),
-          },
-          approved: false,
+            event: 'created',
+            email: req.body.email,
+            date: new Date(),
+        },
+        approved: false,
     });
-    a.save(function(err, a) {
-        if(err) return res.send(500, 'Error occurred: database error.');
-        res.json({ id: a._id });
+    a.save(function(err, a){
+        if(err) return cb({ error: 'Unable to add attraction.' });
+        cb(null, { id: a._id });
     });
 });
 
-app.get('/api/attraction/:id', function(req, res) {
-    Attraction.findById(req.params.id, function(err, a) {
-        if(err) return res.send(500, 'Error occured: database error.');
-        res.json({
+rest.get('/attraction/:id', function(req, content, cb){
+    Attraction.findById(req.params.id, function(err, a){
+        if(err) return cb({ error: 'Unable to retrieve attraction.' });
+        cb(null, {
             name: a.name,
-            id: a._id,
             description: a.description,
-            location: a.location
+            location: a.location,
         });
     });
 });
 
-// route 파일
-require('./routes.js')(app);
-
-// define API routes with rest.VERB...
 
 // API configuration
 var apiOptions = {
@@ -157,7 +206,7 @@ var apiOptions = {
 };
 
 // link API into pipe lline
-app.use(rest.rester(apiOptions));
+app.use( rest.rester( apiOptions ));
 
 // custom 404 page handler
 app.use(function (req, res) {
