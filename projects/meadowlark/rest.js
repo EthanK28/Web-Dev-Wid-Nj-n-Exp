@@ -3,7 +3,7 @@ var connect = require('connect')
     http = require('http'),
 bodyParser = require('body-parser');
 
-// var Rest = require('connect-rest');
+var rest = require('connect-rest');
 
 // sets up connect and adds other middlewares to parse query, parameters, content and session
 // use the ones you need
@@ -21,10 +21,10 @@ var options = {
     protoPath: 'proto'
 };
 
-var rest = Rest.create( options );
+// var rest = Rest.create( options );
 
 // adds connect-rest middleware to connect
-// connectApp.use( rest.rester( options ) );
+connectApp.use( rest.register( options ) );
 
 rest.get('/', function(req, res) {
     res.send('Book');

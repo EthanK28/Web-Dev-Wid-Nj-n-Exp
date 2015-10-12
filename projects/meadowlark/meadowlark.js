@@ -1,12 +1,11 @@
 var http = require('http'),
     express = require('express'),
-    fortune = require('./lib/fortune.js');
+    fortune = require('./lib/fortune.js'),
+    mongoose = require('mongoose');
 
 var app = express();
 
 var credentials = require('./credentials.js');
-
-var mongoose = require('mongoose');
 
 app.use(require('cookie-parser')(credentials.cookieSecret));
 
@@ -16,10 +15,6 @@ var session = require('express-session');
 var MongoStore = require('connect-mongo')(session);
 
 var bodyParser = require('body-parser');
-
-
-
-
 
 // Mongodb
 
@@ -39,9 +34,6 @@ switch(app.get('env')){
     default:
         throw new Error('Unknown execution environment: ' + app.get('env'));
 }
-
-
-
 
 app.use(session({
     secret: credentials.cookieSecret,
@@ -69,7 +61,10 @@ var handlebars = require('express-handlebars')
                             if(!this._sections) this._sections = {};
                             this._sections[name] = options.fn(this);
                             return null;
-                          }
+                            },
+                            static: function(name) {
+                                return require('./lib/static.js').map(name);
+                            }
                         }
                      });
 
@@ -93,10 +88,17 @@ app.use(function(req, res, next) {
 app.use(function(req, res, next){
         res.locals.showTests = app.get('env') !== 'production' &&
                   req.query.test === '1';
-
         // console.log("showTests 값: ", res.locals.showTests);
-
         next();
+});
+
+var static = require('./lib/static.js').map;
+
+app.use(function(req, res, next) {
+    var now = new Date();
+    res.locals.logoImage = now.getMonth()==11 && now.getDate() == 19 ?
+            static('/img/logo_bud_clark.png') : static('/img/logo.jpg');
+    next();
 });
 
 
@@ -153,60 +155,74 @@ var Attraction = require('./models/attraction.js');
 // route 파일
 require('./routes.js')(app);
 
-var rest = require('connect-rest');
+// api
 
-// define API routes with rest.VERB...
-rest.get('/attractions', function(req, content, cb){
-    Attraction.find({ approved: true }, function(err, attractions){
-        if(err) return cb({ error: 'Internal error.' });
-        cb(null, attractions.map(function(a){
-            return {
-                name: a.name,
-                description: a.description,
-                location: a.location,
-            };
-        }));
-    });
-});
+// var Attraction = require('./models/attraction.js');
+//
+// var rest = require('connect-rest');
+//
+// rest.get('/attractions', function(req, content, cb){
+//     Attraction.find({ approved: true }, function(err, attractions){
+//         if(err) return cb({ error: 'Internal error.' });
+//         cb(null, attractions.map(function(a){
+//             return {
+//                 name: a.name,
+//                 description: a.description,
+//                 location: a.location,
+//             };
+//         }));
+//     });
+// });
+//
+// rest.post('/attraction', function(req, content, cb){
+//     var a = new Attraction({
+//         name: req.body.name,
+//         description: req.body.description,
+//         location: { lat: req.body.lat, lng: req.body.lng },
+//         history: {
+//             event: 'created',
+//             email: req.body.email,
+//             date: new Date(),
+//         },
+//         approved: false,
+//     });
+//     a.save(function(err, a){
+//         if(err) return cb({ error: 'Unable to add attraction.' });
+//         cb(null, { id: a._id });
+//     });
+// });
+//
+// rest.get('/attraction/:id', function(req, content, cb){
+//     Attraction.findById(req.params.id, function(err, a){
+//         if(err) return cb({ error: 'Unable to retrieve attraction.' });
+//         cb(null, {
+//             name: a.name,
+//             description: a.description,
+//             location: a.location,
+//         });
+//     });
+// });
+//
+// // API configuration
+// var apiOptions = {
+//     context: '/',
+//     domain: require('domain').create(),
+// };
+//
+// apiOptions.domain.on('error', function(err){
+//     console.log('API domain error.\n', err.stack);
+//     setTimeout(function(){
+//         console.log('Server shutting down after API domain error.');
+//         process.exit(1);
+//     }, 5000);
+//     server.close();
+//     var worker = require('cluster').worker;
+//     if(worker) worker.disconnect();
+// });
 
-rest.post('/attraction', function(req, content, cb){
-    var a = new Attraction({
-        name: req.body.name,
-        description: req.body.description,
-        location: { lat: req.body.lat, lng: req.body.lng },
-        history: {
-            event: 'created',
-            email: req.body.email,
-            date: new Date(),
-        },
-        approved: false,
-    });
-    a.save(function(err, a){
-        if(err) return cb({ error: 'Unable to add attraction.' });
-        cb(null, { id: a._id });
-    });
-});
-
-rest.get('/attraction/:id', function(req, content, cb){
-    Attraction.findById(req.params.id, function(err, a){
-        if(err) return cb({ error: 'Unable to retrieve attraction.' });
-        cb(null, {
-            name: a.name,
-            description: a.description,
-            location: a.location,
-        });
-    });
-});
-
-
-// API configuration
-var apiOptions = {
-    context:'/api',
-    domain: require('domain').create(),
-};
 
 // link API into pipe lline
-app.use( rest.rester( apiOptions ));
+// app.use( rest.rester( apiOptions ));
 
 // custom 404 page handler
 app.use(function (req, res) {

@@ -11,10 +11,10 @@
 
 
     {{{ _sections.head }}}
-
+    <link rel="stylesheet" href="{{ static /css/main.css }}">
 </head>
 <body>
-  <header><img src="/img/logo.jpg" width="15%"alt="Meadowlark Travel Logo"></header>
+  <header><img src="{{ logoImage }}" width="15%"alt="Meadowlark Travel Logo"></header>
   {{#if flash}}
         <div class="alert alert-dismissible alert-{{flash.type}}">
                 <button type="button" class="close"
