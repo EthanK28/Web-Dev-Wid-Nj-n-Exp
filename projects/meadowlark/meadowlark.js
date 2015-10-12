@@ -4,9 +4,6 @@ var fortune = require('./lib/fortune.js');
 
 var app = express();
 
-
-
-
 var credentials = require('./credentials.js');
 
 var mongoose = require('mongoose');
@@ -17,6 +14,10 @@ app.use(require('express-session')());
 
 var session = require('express-session');
 var MongoStore = require('connect-mongo')(session);
+
+var rest = require('connect-rest');
+
+
 
 // Mongodb
 
@@ -36,6 +37,8 @@ switch(app.get('env')){
     default:
         throw new Error('Unknown execution environment: ' + app.get('env'));
 }
+
+
 
 
 app.use(session({
@@ -93,16 +96,70 @@ app.use(function(req, res, next){
         next();
 });
 
+app.use('/api', require('cors')());
+
+var Attraction = require('./models/attraction.js');
+
+app.get('/api/attractions', function(req, res) {
+    Attraction.find({ approved: true }, function(err, attractions) {
+        if(err) return res.send(500, 'Error occurred: database error.');
+        res.json(attractions.map(function(a) {
+            return {
+                name: a.name,
+                id: a._id,
+                description: a.description,
+                location: a.location
+            };
+        }));
+    });
+});
+
+app.post('/api/attraction', function(req, res) {
+    var a = new Attraction({
+        name: req.body.name,
+        description: req.body.description,
+        location: { lat: req.body.lat, lng: req.body.lng },
+        //      location: { lat: req.body.lat, lng: req.body.lng },
+        history: {
+              event: 'created',
+              email: req.body.email,
+              date: new Date(),
+          },
+          approved: false,
+    });
+    a.save(function(err, a) {
+        if(err) return res.send(500, 'Error occurred: database error.');
+        res.json({ id: a._id });
+    });
+});
+
+app.get('/api/attraction/:id', function(req, res) {
+    Attraction.findById(req.params.id, function(err, a) {
+        if(err) return res.send(500, 'Error occured: database error.');
+        res.json({
+            name: a.name,
+            id: a._id,
+            description: a.description,
+            location: a.location
+        });
+    });
+});
+
 // route 파일
 require('./routes.js')(app);
 
-app.listen(app.get('port'), function() {
-  console.log( 'Express started on htpp"//localhost:', app.get('port') + '; press Ctrl-C to terminate.' );
-});
+// define API routes with rest.VERB...
 
+// API configuration
+var apiOptions = {
+    context:'/api',
+    domain: require('domain').create(),
+};
 
+// link API into pipe lline
+app.use(rest.rester(apiOptions));
 
-// custom 404 page
+// custom 404 page handler
 app.use(function (req, res) {
 
       // res.type('text/plain');
@@ -120,7 +177,9 @@ app.use(function (err, req, res, next) {
     // res.end('500 - Server Error');
 });
 
-// Ch10 MiddleWare
+app.listen(app.get('port'), function() {
+  console.log( 'Express started on htpp"//localhost:', app.get('port') + '; press Ctrl-C to terminate.' );
+});
 
 
 

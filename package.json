@@ -12,6 +12,7 @@
     "body-parser": "^1.14.1",
     "bootstrap": "^3.3.5",
     "connect": "^3.4.0",
+    "connect-rest": "^2.0.5",
     "cookie-parser": "^1.4.0",
     "express": "^4.13.3",
     "express-handlebars": "^2.0.1",
