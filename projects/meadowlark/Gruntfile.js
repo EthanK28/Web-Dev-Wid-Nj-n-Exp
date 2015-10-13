@@ -34,8 +34,8 @@ module.exports = function(grunt) {
                   }
               },
             files: {
-                    'public/css/main.css': 'less/main.less'
-                    'public/css/cart.css': 'less/cart.css',
+                    'public/css/main.css': 'less/main.less',
+                    'public/css/cart.css': 'less/cart.less'
                 }
             }
         },
@@ -55,7 +55,7 @@ module.exports = function(grunt) {
             },
             minify: {
                 src: 'public/css/meadowlark.css',
-                dest: 'pubilc/css/meadowlark.min.css'
+                dest: 'public/css/meadowlark.min.css'
             }
         },
         hashres: {
@@ -68,7 +68,7 @@ module.exports = function(grunt) {
                     'public/css/meadowlark.min.css',
                 ],
                 dest: [
-                    'views/layouts/mian.handlebars',
+                    'views/layouts/main.handlebars',
                 ]
             }
         }
@@ -78,5 +78,6 @@ module.exports = function(grunt) {
       // },
   });
     //register tasks
-    grunt.registerTask('default', ['cafemocha', 'jshint', 'less']); //'exec'
+    grunt.registerTask('default', ['cafemocha', 'jshint', 'less', 'uglify',
+                        'cssmin', 'hashres']); //'exec'
 };
