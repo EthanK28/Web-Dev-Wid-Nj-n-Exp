@@ -10,10 +10,16 @@
     <link rel="stylesheet" href="/bootstrap/css/bootstrap.css">
 
     <script src="//code.jquery.com/jquery-2.0.2.min.js"></script>
-    <script src="{{static '/js/meadowlark.min.28bcf4f4.js'}}"></script>
+    <script src="{{static '/js/meadowlark.min.7ba4fca3.js'}}"></script>
     <link rel="stylesheet" href="{{static '/css/meadowlark.min.2a8883cf.css'}}">
 
     {{{ _sections.head }}}
+    {{#each _bundles.css}}
+        <link rel="stylesheet" href="{{static .}}">
+    {{/each}}
+    {{#each _bundles.js.head}}
+        <script src="{{static .}}"></script>
+    {{/each}}
 </head>
 <body>
   <header><img src="{{ logoImage }}" width="15%"alt="Meadowlark Travel Logo"></header>

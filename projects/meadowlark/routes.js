@@ -97,6 +97,8 @@ module.exports = function(app) {
             res.send('madness');
     });
 
+
+
     // Jquery File Upload
     var jqupload = require('jquery-file-upload-middleware');
 
@@ -109,6 +111,39 @@ module.exports = function(app) {
                 return '/uploads/' + now; },
             })(req, res, next);
     });
+
+    var auth = require('./lib/auth.js')(app, {
+        providers: credentials.authProviders,
+        successRedirect: '/account',
+        failureRedirect: '/unauthorized',
+    });
+    // auth.init() links in Passport middleware:
+    auth.init();
+    // now we can specify our auth routes:
+    auth.registerRoutes();
+
+    app.get('/account', function(req, res){
+        if(!req.session.passport.user)
+                return res.redirect(303, '/unauthorized');
+        res.render('account');
+    });
+
+    app.get('/unauthorized', function(req, res){
+        res.send('Unauthorized');
+    });
+
+    function customerOnly(req, res) {
+        var user = req.session.passport.user;
+        if(user && req.role==='customer') return next();
+        res.redirect(303, '/unauthorized');
+    }
+
+    function employeeOnly(req, res, next) {
+        var user = req.session.user;
+        if(user && req.role==='employee') return next();
+        next('route');
+    }
+
 
 
 
